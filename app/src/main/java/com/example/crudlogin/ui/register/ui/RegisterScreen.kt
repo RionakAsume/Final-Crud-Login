@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -22,6 +24,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +36,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.crudlogin.R
@@ -44,7 +46,7 @@ import com.example.crudlogin.ui.theme.LightGray
 
 @Composable
 fun RegisterScreen(navController: NavController, registerViewModel: RegisterViewModel) {
-    val uiState by registerViewModel.uiState
+    val uiState by registerViewModel.uiState.collectAsState()
 
     LaunchedEffect(key1 = registerViewModel.registrationStatus) {
         registerViewModel.registrationStatus.collect {
@@ -56,14 +58,11 @@ fun RegisterScreen(navController: NavController, registerViewModel: RegisterView
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-
-        ) {
+    ) {
         Register(
             Modifier.align(Alignment.TopCenter),
-            uiState,
-            onRegisterChanged = { name, lastName, dni, phone, email, password ->
-                registerViewModel.onRegisterChanged(name, lastName, dni, phone, email, password)
-            },
+            uiState = uiState,
+            onRegisterChanged = registerViewModel::onRegisterChange,
             onRegisterClicked = { registerViewModel.registerUser() }
         )
     }
@@ -73,25 +72,29 @@ fun RegisterScreen(navController: NavController, registerViewModel: RegisterView
 fun Register(
     modifier: Modifier,
     uiState: RegisterUiState,
-    onRegisterChanged: (String, String, String, String, String, String) -> Unit,
+    onRegisterChanged: (String, String, String, String, String, String, String) -> Unit,
     onRegisterClicked: () -> Unit
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState())
+    ) {
         HeaderImageRegister(Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.padding(16.dp))
-        NameField(uiState.name) { onRegisterChanged(it, uiState.lastName, uiState.dni, uiState.phone, uiState.email, uiState.password) }
+        NameField(uiState.name, uiState.nameError) { onRegisterChanged(it, uiState.lastName, uiState.dni, uiState.phone, uiState.email, uiState.password, uiState.confirmPassword) }
         Spacer(Modifier.padding(4.dp))
-        LastNameField(uiState.lastName) { onRegisterChanged(uiState.name, it, uiState.dni, uiState.phone, uiState.email, uiState.password) }
+        LastNameField(uiState.lastName, uiState.lastNameError) { onRegisterChanged(uiState.name, it, uiState.dni, uiState.phone, uiState.email, uiState.password, uiState.confirmPassword) }
         Spacer(Modifier.padding(4.dp))
-        DniField(uiState.dni) { onRegisterChanged(uiState.name, uiState.lastName, it, uiState.phone, uiState.email, uiState.password) }
+        DniField(uiState.dni, uiState.dniError) { onRegisterChanged(uiState.name, uiState.lastName, it, uiState.phone, uiState.email, uiState.password, uiState.confirmPassword) }
         Spacer(Modifier.padding(4.dp))
-        PhoneField(uiState.phone) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, it, uiState.email, uiState.password) }
+        PhoneField(uiState.phone, uiState.phoneError) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, it, uiState.email, uiState.password, uiState.confirmPassword) }
         Spacer(Modifier.padding(4.dp))
-        EmailField(uiState.email) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, uiState.phone, it, uiState.password) }
+        EmailField(uiState.email, uiState.emailError) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, uiState.phone, it, uiState.password, uiState.confirmPassword) }
         Spacer(Modifier.padding(4.dp))
-        PasswordField(uiState.password) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, uiState.phone, uiState.email, it) }
+        PasswordField(uiState.password, uiState.passwordError) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, uiState.phone, uiState.email, it, uiState.confirmPassword) }
+        Spacer(Modifier.padding(4.dp))
+        ConfirmPasswordField(uiState.confirmPassword, uiState.confirmPasswordError) { onRegisterChanged(uiState.name, uiState.lastName, uiState.dni, uiState.phone, uiState.email, uiState.password, it) }
         Spacer(Modifier.padding(8.dp))
-        RegisterButton(onRegisterClicked)
+        RegisterButton(uiState.isFormValid, onRegisterClicked)
     }
 }
 
@@ -105,12 +108,14 @@ fun HeaderImageRegister(modifier: Modifier) {
 }
 
 @Composable
-fun NameField(value: String, onValueChange: (String) -> Unit) {
+fun NameField(value: String, error: String?, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "Nombre") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         singleLine = true,
         maxLines = 1,
@@ -127,12 +132,14 @@ fun NameField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun LastNameField(value: String, onValueChange: (String) -> Unit) {
+fun LastNameField(value: String, error: String?, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "Apellido") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         singleLine = true,
         maxLines = 1,
@@ -149,12 +156,14 @@ fun LastNameField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun DniField(value: String, onValueChange: (String) -> Unit) {
+fun DniField(value: String, error: String?, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "DNI") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
         maxLines = 1,
@@ -171,12 +180,14 @@ fun DniField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun PhoneField(value: String, onValueChange: (String) -> Unit) {
+fun PhoneField(value: String, error: String?, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "Telefono") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         singleLine = true,
         maxLines = 1,
@@ -193,12 +204,14 @@ fun PhoneField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun EmailField(value: String, onValueChange: (String) -> Unit) {
+fun EmailField(value: String, error: String?, onValueChange: (String) -> Unit) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "Email") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         singleLine = true,
         maxLines = 1,
@@ -215,13 +228,15 @@ fun EmailField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun PasswordField(value: String, onValueChange: (String) -> Unit) {
+fun PasswordField(value: String, error: String?, onValueChange: (String) -> Unit) {
     var passwordVisible by remember { mutableStateOf(false) } 
     TextField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(text = "Contraseña") },
         modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             val image = if (passwordVisible)
@@ -248,12 +263,49 @@ fun PasswordField(value: String, onValueChange: (String) -> Unit) {
 }
 
 @Composable
-fun RegisterButton(onRegisterClicked: () -> Unit) {
+fun ConfirmPasswordField(value: String, error: String?, onValueChange: (String) -> Unit) {
+    var passwordVisible by remember { mutableStateOf(false) }
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(text = "Confirmar contraseña") },
+        modifier = Modifier.fillMaxWidth(),
+        isError = error != null,
+        supportingText = { error?.let { Text(text = it, color = Color.Red) } },
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            val image = if (passwordVisible)
+                Icons.Filled.Visibility
+            else Icons.Filled.VisibilityOff
+
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                Icon(imageVector = image, contentDescription = "show password")
+            }
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        singleLine = true,
+        maxLines = 1,
+        colors = TextFieldDefaults.colors(
+            unfocusedTextColor = Black,
+            focusedTextColor = Black,
+            unfocusedContainerColor = LightGray,
+            focusedContainerColor = LightGray,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+        )
+    )
+}
+
+
+@Composable
+fun RegisterButton(isEnabled: Boolean, onRegisterClicked: () -> Unit) {
     Button(
         onClick = onRegisterClicked,
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
+        enabled = isEnabled,
         colors = ButtonDefaults.buttonColors(
             containerColor = Green,
             contentColor = Color.White,
@@ -265,4 +317,3 @@ fun RegisterButton(onRegisterClicked: () -> Unit) {
         Text(text = "Registrarse")
     }
 }
-

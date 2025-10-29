@@ -1,11 +1,8 @@
 package com.example.crudlogin.ui.login.ui
 
 import android.util.Patterns
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.crudlogin.data.local.User
 import com.example.crudlogin.data.local.UserDao
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +14,6 @@ data class LoginUiState(
     val email: String = "",
     val password: String = "",
     val emailError: String? = null,
-    val passwordError: String? = null,
     val isLoading: Boolean = false,
     val loginSuccess: Boolean = false,
     val loginError: String? = null
@@ -41,7 +37,11 @@ class LoginViewModel(private val userDao: UserDao) : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val user = userDao.getUserByEmail(_uiState.value.email).firstOrNull()
             if (user != null && user.password == _uiState.value.password) {
-                _uiState.value = _uiState.value.copy(isLoading = false, loginSuccess = true)
+                if (!user.estado) { // Comprueba si el usuario está activo
+                    _uiState.value = _uiState.value.copy(isLoading = false, loginSuccess = true)
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false, loginError = "La cuenta de usuario está inactiva")
+                }
             } else {
                 _uiState.value =
                     _uiState.value.copy(isLoading = false, loginError = "Credenciales incorrectas")

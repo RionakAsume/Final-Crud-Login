@@ -1,5 +1,6 @@
 package com.example.crudlogin.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,5 +13,7 @@ data class User(
     val dni: String,
     val phone: String,
     val email: String,
-    val password: String
+    val password: String,
+    @ColumnInfo(defaultValue = "0")
+    val estado: Boolean = false // false = activo, true = inactivo
 )
