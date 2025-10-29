@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.crudlogin.R
 import com.example.crudlogin.Screen
 
@@ -29,7 +28,6 @@ fun HomeScreen(homeViewModel: HomeViewModel, navController: NavController, email
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
         HeaderImagehome(Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(48.dp))
         Text(text = "¡Bienvenido a la pantalla de inicio!")
@@ -40,7 +38,7 @@ fun HomeScreen(homeViewModel: HomeViewModel, navController: NavController, email
         Spacer(modifier = Modifier.height(8.dp))
         Button(onClick = {
             navController.navigate(Screen.LoginScreen.route) {
-                popUpTo(navController.graph.findStartDestination().id) {
+                popUpTo(navController.graph.id) {
                     inclusive = true
                 }
             }

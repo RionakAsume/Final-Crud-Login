@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.crudlogin.Screen
 import com.example.crudlogin.ui.theme.Green
 import com.example.crudlogin.ui.theme.Gray
@@ -49,7 +48,7 @@ fun UserConfigScreen(userConfigViewModel: UserConfigViewModel, navController: Na
     LaunchedEffect(uiState.userDeactivated) {
         if (uiState.userDeactivated) {
             navController.navigate(Screen.LoginScreen.route) {
-                popUpTo(navController.graph.findStartDestination().id) {
+                popUpTo(navController.graph.id) {
                     inclusive = true
                 }
             }
